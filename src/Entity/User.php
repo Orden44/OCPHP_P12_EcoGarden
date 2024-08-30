@@ -178,4 +178,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function isValidCredentials(string $username, string $password): bool
+    {
+        // Vérifier les informations d'identification de l'utilisateur
+        return $this->username === $username && password_verify($password, $this->password);
+    }
 }

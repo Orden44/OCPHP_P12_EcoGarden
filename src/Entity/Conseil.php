@@ -28,10 +28,11 @@ class Conseil
     #[Groups(["getConseils", "getUsers"])]
     private ?string $description = null;
 
-    #[ORM\ManyToOne(inversedBy: 'conseils')]
+    // #[ORM\ManyToOne(inversedBy: 'conseils')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "conseils")]
     #[ORM\JoinColumn(nullable: false)]
     // #[Groups(["getConseils"])]
-    // #[Groups(["getUsers"])]
+    #[Groups(["getUsers"])]
     private ?User $user = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]

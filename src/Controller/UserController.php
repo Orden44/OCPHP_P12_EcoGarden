@@ -15,6 +15,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class UserController extends AbstractController
 {
@@ -27,13 +29,14 @@ class UserController extends AbstractController
     }
 
     #[Route('/api/users/{id}', name: 'detailUser', methods: ['GET'])]
-    public function getDetailUser(User $user, SerializerInterface $serializer, UserRepository $userRepository): JsonResponse 
+    public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse 
     {
             $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUsers']);
             return new JsonResponse($jsonUser, Response::HTTP_OK, ['accept' => 'json'], true);
     }
 
     #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
     public function deleteUser(User $user, EntityManagerInterface $em): JsonResponse 
     {
         $em->remove($user);
@@ -72,6 +75,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/api/users/{id}', name:"updateUser", methods:['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
     public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em, UserPasswordHasherInterface $userPasswordHasher, ValidatorInterface $validator): JsonResponse 
     {
        $updateUser = $serializer->deserialize($request->getContent(), 
