@@ -28,21 +28,16 @@ class Conseil
     #[Groups(["getConseils", "getUsers"])]
     private ?string $description = null;
 
-    // #[ORM\ManyToOne(inversedBy: 'conseils')]
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "conseils")]
     #[ORM\JoinColumn(nullable: false)]
-    // #[Groups(["getConseils"])]
-    #[Groups(["getUsers"])]
     private ?User $user = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     #[Assert\NotBlank(message: "La date de création du conseil est obligatoire")]
-    // #[Assert\DateTime(message: "La date de création doit être une date valide")]
     #[Groups(["getConseils"])]
     private ?\DateTimeInterface $createdate = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
-    // #[Assert\DateTime(message: "La date de modification doit être une date valide")]
     #[Groups(["getConseils"])]
     private ?\DateTimeInterface $updatedate = null;
 

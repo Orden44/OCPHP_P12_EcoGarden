@@ -21,9 +21,11 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 class UserController extends AbstractController
 {
     #[Route('/api/users', name: 'user', methods: ['GET'])]
-    public function getUserList(UserRepository $userRepository, SerializerInterface $serializer): JsonResponse
+    public function getUserList(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
     {
-        $userList = $userRepository->findAll();
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit');
+        $userList = $userRepository->findAllWithPagination($page, $limit);
         $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'getUsers']);
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
     }

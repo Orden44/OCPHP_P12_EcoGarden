@@ -7,6 +7,7 @@ use App\Repository\UserRepository;
 use App\Repository\ConseilRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Security;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,11 +20,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 class ConseilController extends AbstractController
 {
     #[Route('/api/conseils', name: 'conseil', methods: ['GET'])]
-    public function getConseilList(ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
+    public function getConseilList(ConseilRepository $conseilRepository, SerializerInterface $serializer, Request $request): JsonResponse
     {
-        $conseilList = $conseilRepository->findAll();
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit');
+        $conseilList = $conseilRepository->findAllWithPagination($page, $limit);
+
         $jsonConseilList = $serializer->serialize($conseilList, 'json', ['groups' => 'getConseils'], ['groups' => 'getUsers']);
-        // $jsonConseilList = $this->serializeConseil($conseilList, $serializer);
         return new JsonResponse($jsonConseilList, Response::HTTP_OK, [], true);
     }
 
@@ -40,7 +43,6 @@ class ConseilController extends AbstractController
         // $jsonConseilList = $this->serializeConseil($conseilCurrentMonth, $serializer);
         return new JsonResponse($jsonConseilList, Response::HTTP_OK, [], true);
     }
-
 
     #[Route('/api/conseils/month/{month}', name: 'conseil_month', methods: ['GET'])]
     public function getConseilsByMonth($month, ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
@@ -59,12 +61,6 @@ class ConseilController extends AbstractController
 
     public function serializeConseil($conseil, SerializerInterface $serializer)
     {
-        // $json = $serializer->serialize($conseil, 'json', [
-        //     'groups' => 'getConseils',
-        //     'ignored_attributes' => ['user'],
-        //     'userId' => $conseil->getUser()->getId()           
-        // ]);
-
         $data = [
             'id' => $conseil->getId(),
             'title' => $conseil->getTitle(),
@@ -82,7 +78,6 @@ class ConseilController extends AbstractController
     #[Route('/api/conseils/detail/{id}', name: 'detailConseil', methods: ['GET'])]
     public function getDetailConseil(Conseil $conseil, SerializerInterface $serializer): JsonResponse 
     {
-        // $jsonConseil = $serializer->serialize($conseil, 'json', ['groups' => 'getConseils']);
         $jsonConseil = $this->serializeConseil($conseil, $serializer);
 
         return new JsonResponse($jsonConseil, Response::HTTP_OK, ['accept' => 'json'], true);
@@ -109,9 +104,9 @@ class ConseilController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/api/conseils/{userId}', name:"createConseil", methods: ['POST'])]
+    #[Route('/api/conseils', name:"createConseil", methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
-    public function createConseil(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, UserRepository $userRepository, ValidatorInterface $validator, $userId): JsonResponse 
+    public function createConseil(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, ValidatorInterface $validator, Security $security): JsonResponse 
     {
         $conseil = $serializer->deserialize($request->getContent(), Conseil::class, 'json');
 
@@ -121,14 +116,7 @@ class ConseilController extends AbstractController
             return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
         }
 
-        // // Récupération de l'ensemble des données envoyées sous forme de tableau
-        // $content = $request->toArray();
-        // // Récupération de l'idUser. S'il n'est pas défini, alors on met -1 par défaut.
-        // $user = $content['user_id'] ?? -1;
-        // // On cherche l'auteur qui correspond et on l'assigne au conseil.
-        // // Si "find" ne trouve pas l'auteur, alors null sera retourné.
-
-        $conseil->setUser($userRepository->find($userId));
+        $conseil->setUser($security->getUser());
 
         $em->persist($conseil);
         $em->flush();
@@ -155,17 +143,12 @@ class ConseilController extends AbstractController
                 return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
             }
         
-        // $content = $request->toArray();
-        // $user = $content['user_id'] ?? -1;
         $updateConseil->setUser($this->getUser());
         $updateConseil->setUpdatedate(new \DateTime());
-        // $updateConseil->setUser($userRepository->find($user));
        
         $em->persist($updateConseil);
         $em->flush();
-        // return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
 
-        // $jsonConseil = $serializer->serialize($updateConseil, 'json', ['groups' => 'getConseils']);
         $jsonConseil = $this->serializeConseil($updateConseil, $serializer);
         return new JsonResponse($jsonConseil, Response::HTTP_OK, ['accept' => 'json'], true);
     }

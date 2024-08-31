@@ -18,18 +18,15 @@ class ConseilRepository extends ServiceEntityRepository
         parent::__construct($registry, Conseil::class);
     }
 
+    public function findAllWithPagination($page, $limit) {
+        $qb = $this->createQueryBuilder('b')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+        return $qb->getQuery()->getResult();
+    }
+    
     public function findByMonth($month)
     {
-        // $qb = $this->createQueryBuilder('c')
-        //     ->where('MONTH(c.createdate) = :month')
-        //     // ->where('DATE_PART(\'month\', c.date) = :month')
-        //     // ->where("DATE_FORMAT(c.date, '%m') = :month")
-        //     // ->andWhere(new Expr\Func('MONTH', ['c.date']) . ' = :month')
-        //     ->setParameter('month', $month)
-        //     ->getQuery();
-
-        // return $qb->getResult();
-
         $qb = $this->createQueryBuilder('c');
         $qb->where(
             $qb->expr()->orX(
@@ -46,6 +43,16 @@ class ConseilRepository extends ServiceEntityRepository
             )
         );    
         return $qb->getQuery()->getResult();
+
+        // $qb = $this->createQueryBuilder('c')
+        //     ->where('MONTH(c.createdate) = :month')
+        //     // ->where('DATE_PART(\'month\', c.date) = :month')
+        //     // ->where("DATE_FORMAT(c.date, '%m') = :month")
+        //     // ->andWhere(new Expr\Func('MONTH', ['c.date']) . ' = :month')
+        //     ->setParameter('month', $month)
+        //     ->getQuery();
+
+        // return $qb->getResult();
     }
 
     //    /**
