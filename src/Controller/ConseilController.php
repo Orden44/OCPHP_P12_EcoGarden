@@ -22,8 +22,8 @@ class ConseilController extends AbstractController
     public function getConseilList(ConseilRepository $conseilRepository, SerializerInterface $serializer): JsonResponse
     {
         $conseilList = $conseilRepository->findAll();
-        // $jsonConseilList = $serializer->serialize($conseilList, 'json', ['groups' => 'getConseils'], ['groups' => 'getUsers']);
-        $jsonConseilList = $this->serializeConseil($conseilList, $serializer);
+        $jsonConseilList = $serializer->serialize($conseilList, 'json', ['groups' => 'getConseils'], ['groups' => 'getUsers']);
+        // $jsonConseilList = $this->serializeConseil($conseilList, $serializer);
         return new JsonResponse($jsonConseilList, Response::HTTP_OK, [], true);
     }
 
