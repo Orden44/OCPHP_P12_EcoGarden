@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Conseil;
-use App\Repository\UserRepository;
 use App\Repository\ConseilRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,6 +16,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
 class ConseilController extends AbstractController
 {
     #[Route('/api/conseils', name: 'conseil', methods: ['GET'])]
