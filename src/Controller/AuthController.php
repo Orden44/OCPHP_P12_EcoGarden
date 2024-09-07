@@ -21,6 +21,14 @@ class AuthController extends AbstractController
         $this->jwtEncoder = $jwtEncoder;
     }
 
+    #[Route('/', name:"home", methods:['GET'])]
+    public function home()
+    {
+        return $this->json([
+            'message' => 'EcoGarden vous souhaite la bienvenue',
+        ]);
+    }
+
     #[Route('/auth', name: 'app_auth', methods: ['POST'])]
     public function auth(SerializerInterface $serializer, Request $request, UserRepository $userRepository): Response 
     {
