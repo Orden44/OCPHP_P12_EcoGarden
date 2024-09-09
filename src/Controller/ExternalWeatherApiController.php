@@ -9,6 +9,9 @@ use Lcobucci\JWT\Encoding\JoseEncoder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -22,6 +25,7 @@ class ExternalWeatherApiController extends AbstractController
         private UserRepository $userRepository,
         private JWTTokenManagerInterface $jwtManager,
         private TokenStorageInterface $tokenStorage,
+        private TagAwareCacheInterface $cache,
     )
     {
     }
@@ -41,13 +45,56 @@ class ExternalWeatherApiController extends AbstractController
     }
 
     #[Route('/weather/{city}', name: 'weatherByCity', methods: ['GET'])]
-    public function getWeatherByCity(string $city): Response
+    public function getWeatherByCity(string $city, Request $request): Response
     {
-        $weather = $this->fetchWeatherApi($city);
+        $extractor = new AuthorizationHeaderTokenExtractor(
+            'Bearer',
+            'Authorization'
+        );
+    
+        $token = $extractor->extract($request);
+        if (!$token) {
+            // Gérer le cas où aucun token n'est présent dans l'en-tête d'autorisation
+            return $this->json([
+                'statut' => 'Utilisateur non authentifié',
+                'error' => 'Pas de token présent dans l\'entête', 
+            ], 401);
+        }
 
-        return $this->json([
-            'weather' => $weather,
-        ]);
+        $parser = new Parser(new JoseEncoder());
+        try {
+            $jwt = $parser->parse($token);
+        } catch (\Exception $e) {
+            // Gérer le cas où le token est invalide
+            return $this->json([
+                'statut' => 'Utilisateur non authentifié',
+                'error' => 'Token invalide. Veuillez fournir un token valide.',
+            ], 401);
+        }
+
+        $username = $jwt->claims()->get('username');
+
+        $user = $this->userRepository->findOneBy(['username' => $username]);
+        if (!$user) {
+            throw new \RuntimeException('Utilisateur non trouvé');
+        }
+
+        $idCache = "getWeatherByCity" . $city;
+
+        $jsonWeather = $this->cache->get($idCache, function (ItemInterface $item) use ($city) {
+            $item->tag('weatherCache');
+            $item->expiresAfter(3600);
+
+            $weather = $this->fetchWeatherApi($city);
+
+            return $this->json([
+                'weather' => $weather,
+            ]);
+        });
+
+        return new JsonResponse(
+            $jsonWeather, Response::HTTP_OK, [], true
+        );
     }
 
     #[Route('/weather', name: 'weatherByCurrentUser', methods: ['GET'])]
@@ -63,12 +110,21 @@ class ExternalWeatherApiController extends AbstractController
         if (!$token) {
             // Gérer le cas où aucun token n'est présent dans l'en-tête d'autorisation
             return $this->json([
+                'statut' => 'Utilisateur non authentifié',
                 'error' => 'Pas de token présent dans l\'entête',
-            ]);
+            ], 401);
         }
 
         $parser = new Parser(new JoseEncoder());
-        $jwt = $parser->parse($token);
+        try {
+            $jwt = $parser->parse($token);
+        } catch (\Exception $e) {
+            // Gérer le cas où le token est invalide
+            return $this->json([
+                'statut' => 'Utilisateur non authentifié',
+                'error' => 'Token invalide. Veuillez fournir un token valide.',
+            ], 401);
+        }
         $username = $jwt->claims()->get('username');
 
         $user = $this->userRepository->findOneBy(['username' => $username]);
