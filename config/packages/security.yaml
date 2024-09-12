@@ -50,7 +50,7 @@ security:
 
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/auth, roles: PUBLIC_ACCESS }
-        - { path: ^/api/users, roles: PUBLIC_ACCESS }
+        - { path: ^/users, roles: PUBLIC_ACCESS }
         - { path: ^/,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

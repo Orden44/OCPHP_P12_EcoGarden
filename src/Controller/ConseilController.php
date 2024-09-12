@@ -40,7 +40,6 @@ class ConseilController extends AbstractController
         $conseilCurrentMonth = $conseilRepository->findByMonth($currentMonth);
 
         $jsonConseilList = $serializer->serialize($conseilCurrentMonth, 'json', ['groups' => 'getConseils']);
-        // $jsonConseilList = $this->serializeConseil($conseilCurrentMonth, $serializer);
         return new JsonResponse($jsonConseilList, Response::HTTP_OK, [], true);
     }
 
@@ -96,7 +95,7 @@ class ConseilController extends AbstractController
     }
 
     #[Route('/api/conseils/{id}', name: 'deleteConseil', methods: ['DELETE'])]
-    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants supprimer un conseil')]
     public function deleteConseil(Conseil $conseil, EntityManagerInterface $em): JsonResponse 
     {
         $em->remove($conseil);

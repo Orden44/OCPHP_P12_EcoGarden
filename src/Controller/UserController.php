@@ -16,38 +16,10 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class UserController extends AbstractController
 {
-    #[Route('/api/users', name: 'user', methods: ['GET'])]
-    public function getUserList(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
-    {
-        $page = $request->get('page', 1);
-        $limit = $request->get('limit');
-        $userList = $userRepository->findAllWithPagination($page, $limit);
-        $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'getUsers']);
-        return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
-    }
-
-    #[Route('/api/users/{id}', name: 'detailUser', methods: ['GET'])]
-    public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse 
-    {
-            $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUsers']);
-            return new JsonResponse($jsonUser, Response::HTTP_OK, ['accept' => 'json'], true);
-    }
-
-    #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
-    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
-    public function deleteUser(User $user, EntityManagerInterface $em): JsonResponse 
-    {
-        $em->remove($user);
-        $em->flush();
-
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-    }
-
-    #[Route('/api/users', name:"createUser", methods: ['POST'])]
+    #[Route('/users', name:"createUser", methods: ['POST'])]
     public function createUser(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, UserPasswordHasherInterface $userPasswordHasher, ValidatorInterface $validator): JsonResponse 
     {
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
@@ -76,8 +48,37 @@ class UserController extends AbstractController
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["Location" => $location], true);
     }
 
+    #[Route('/api/users', name: 'user', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour visualiser les utilisateurs')]
+    public function getUserList(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
+    {
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit');
+        $userList = $userRepository->findAllWithPagination($page, $limit);
+        $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'getUsers']);
+        return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/api/users/{id}', name: 'detailUser', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour visualiser un utilisateur')]
+    public function getDetailUser(User $user, SerializerInterface $serializer): JsonResponse 
+    {
+            $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUsers']);
+            return new JsonResponse($jsonUser, Response::HTTP_OK, ['accept' => 'json'], true);
+    }
+
+    #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un utilisateur')]
+    public function deleteUser(User $user, EntityManagerInterface $em): JsonResponse 
+    {
+        $em->remove($user);
+        $em->flush();
+
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
     #[Route('/api/users/{id}', name:"updateUser", methods:['PUT'])]
-    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un conseil')]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un utilisateur')]
     public function updateUser(Request $request, SerializerInterface $serializer, User $currentUser, EntityManagerInterface $em, UserPasswordHasherInterface $userPasswordHasher, ValidatorInterface $validator): JsonResponse 
     {
        $updateUser = $serializer->deserialize($request->getContent(), 
